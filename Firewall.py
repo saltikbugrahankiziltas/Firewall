@@ -181,6 +181,12 @@ class FirewallGUI(QMainWindow):
         self.delete_rule_button = QPushButton("Seçili Kuralı Sil")
         
         
+        self.network_label = QLabel("Ağ Trafiği")
+        self.log_area = QTableWidget()  # Tablo oluşturuyor
+        self.log_area.setColumnCount(3)
+        self.log_area.setHorizontalHeaderLabels(["Kaynak","Hedef","Protocol"])
+        self.log_area.setEditTriggers(QTableWidget.NoEditTriggers)
+        
         
         
         layout.addWidget(self.start_button)
@@ -189,10 +195,14 @@ class FirewallGUI(QMainWindow):
         layout.addWidget(self.rule_list)
         layout.addLayout(rule_layout)
         layout.addWidget(self.delete_rule_button)
+        layout.addWidget(self.network_label)
+        layout.addWidget(self.log_area)
+        
+        
         self.main_widget.setLayout(layout)
         
         
-        
+       
 
 if __name__ =="__main__":
     app=QApplication(sys.argv)

@@ -176,11 +176,4 @@ cython_debug/
 
 
 
-# Tüm .log uzantılı dosyalar
-*.log
-
-# Proje klasöründeki 'logs' klasörünü yoksay
-logs/
-
-# firewall_logs.txt dosyasını yoksay
 firewall_logs.txt

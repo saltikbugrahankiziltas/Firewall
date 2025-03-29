@@ -167,8 +167,10 @@ class FirewallGUI(QMainWindow):
         layout = QVBoxLayout()
         
         self.start_button = QPushButton("Firewall Başlat")
+        self.start_button.clicked.connect(self.start_firewall)
         self.stop_button = QPushButton("Firewall Durdur")
         self.stop_button.setEnabled(False)
+        self.stop_button.clicked.connect(self.stop_firewall)
         
         rule_layout = QHBoxLayout()
         self.rule_label = QLabel("Kurallar")
@@ -176,9 +178,11 @@ class FirewallGUI(QMainWindow):
         self.rule_input = QLineEdit()
         self.rule_input.setPlaceholderText("Port veya IP kuralı girin: (ör. 192.168.1.1:80)....")
         self.add_rule_button = QPushButton("Kural Ekle")
+        self.add_rule_button.clicked.connect(self.add_rule)
         rule_layout.addWidget(self.rule_input)
         rule_layout.addWidget(self.add_rule_button)
         self.delete_rule_button = QPushButton("Seçili Kuralı Sil")
+        self.delete_rule_button.clicked.connect(self.delete_rule)
         
         
         self.network_label = QLabel("Ağ Trafiği")
@@ -195,6 +199,19 @@ class FirewallGUI(QMainWindow):
         self.rules_area = QTextEdit()
         self.rules_area.setReadOnly(True)
         
+        self.web_label = QLabel("Engellenen Siteler :")
+        self.web_list = QListWidget()
+
+        website_layout = QHBoxLayout()
+        self.website_input = QLineEdit()
+        self.website_input.setPlaceholderText("Engellenmek istenen site girin: (ör. www.example.com)...")
+        self.add_website_button = QPushButton("Website Ekle")
+        self.add_website_button.clicked.connect(self.add_website)
+        website_layout.addWidget(self.website_input)
+        website_layout.addWidget(self.add_website_button)
+
+
+        
         layout.addWidget(self.start_button)
         layout.addWidget(self.stop_button)
         layout.addWidget(self.rule_label)
@@ -205,11 +222,87 @@ class FirewallGUI(QMainWindow):
         layout.addWidget(self.log_area)
         layout.addWidget(self.rules_label)
         layout.addWidget(self.rules_area)
+        layout.addWidget(self.web_label)
+        layout.addWidget(self.web_list)
+        layout.addLayout(website_layout)
         
         self.main_widget.setLayout(layout)
         
         
-       
+        self.firewall_worker = None
+        self.rules = []
+        self.website_filter = set()
+        
+        
+        
+        
+    def add_to_traffic_table(self,src,dst,protocol):
+        row_position = self.log_area.rowCount()
+        self.log_area.insertRow(row_position)
+        self.log_area.setItem(row_position,0,QTableWidgetItem(src))
+        self.log_area.setItem(row_position,1,QTableWidgetItem(dst))
+        self.log_area.setItem(row_position,2,QTableWidgetItem(protocol))
+        
+        
+    def add_rule(self):
+        rule = self.rule_input.text()
+        if rule:
+            self.rules.append(rule)
+            self.rule_list.addItem(rule)
+            self.rule_input.clear()
+            self.rules_area.append(f"Kural eklendi: {rule}")
+        else:
+            QMessageBox.warning(self,"Uyarı","Geçerli bir kural girin!")
+            
+            
+    def delete_rule(self):
+        selected_item = self.rule_list.currentItem()
+        if selected_item:
+            rule = selected_item.text()
+            self.rules.remove(rule)
+            self.rule_list.takeItem(self.rule_list.row(selected_item))
+            self.rules_area.append(f"Kural silindi: {rule}")
+        else:
+            QMessageBox.warning(self,"Uyarı","Silmek için bir kural seçin!")
+            
+    
+    def start_firewall(self):
+        if not self.firewall_worker:
+            self.firewall_worker = FirewallWorker(self.rules,self.website_filter)
+            self.firewall_worker.log_signal.connect(self.add_to_traffic_table)
+            self.firewall_worker.rules_signal.connect(self.rules_area.append)
+            self.firewall_worker.start()
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
+            
+    
+    def add_website(self):
+        url = self.website_input.text()
+        if url:
+            ip = self.firewall_worker.resolve_url_to_ip(url)
+            if ip:
+                self.website_filter.add(ip)
+                self.web_list.addItem(f"{url} ({ip})")
+                self.website_input.clear()
+                self.rules_area.append(f"Web sitesi filtresine eklendi: {url} ({ip})")
+            else:
+                QMessageBox.warning(self,"Uyarı","URL'nin IP adresini bulamadım.")
+        else:
+            QMessageBox.warning(self,"Uyarı","Bir URL girin!")
+            
+            
+        
+    def stop_firewall(self):
+        if self.firewall_worker:
+            self.firewall_worker.stop()
+            self.firewall_worker.quit()
+            self.firewall_worker.wait()
+            self.firewall_worker = None
+            self.start_button.setEnabled(True)
+            self.stop_button.setEnabled(False)
+            self.rules_area.append("Firewall Durduruldu")
+    
+            
 
 if __name__ =="__main__":
     app=QApplication(sys.argv)

@@ -187,7 +187,13 @@ class FirewallGUI(QMainWindow):
         self.log_area.setHorizontalHeaderLabels(["Kaynak","Hedef","Protocol"])
         self.log_area.setEditTriggers(QTableWidget.NoEditTriggers)
         
+        header = self.log_area.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
         
+        
+        self.rules_label = QLabel("Uygulanan Kurallar:")
+        self.rules_area = QTextEdit()
+        self.rules_area.setReadOnly(True)
         
         layout.addWidget(self.start_button)
         layout.addWidget(self.stop_button)
@@ -197,7 +203,8 @@ class FirewallGUI(QMainWindow):
         layout.addWidget(self.delete_rule_button)
         layout.addWidget(self.network_label)
         layout.addWidget(self.log_area)
-        
+        layout.addWidget(self.rules_label)
+        layout.addWidget(self.rules_area)
         
         self.main_widget.setLayout(layout)
         
